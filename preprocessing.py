@@ -5,14 +5,15 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 # Paths
-DATASET_PATH = r"C:\Users\avanc\Downloads\dataverse_files\HAM10000_images_part_1"
+DATASET_PATH_PART_1 = r"C:\Users\avanc\Downloads\dataverse_files\HAM10000_images_part_1"
+DATASET_PATH_PART_2 = r"C:\Users\avanc\Downloads\dataverse_files\HAM10000_images_part_2"
 METADATA_PATH = r"C:\Users\avanc\Downloads\dataverse_files\HAM10000_metadata"
 OUTPUT_DIR = r"C:\Users\avanc\Downloads\dataverse_files\processed_dataset"
 
 # Skincare concerns and severities
-CONCERNS = ['Acne', 'Aging', 'Hyperpigmentation', 'Dryness', 'Sensitive Skin']
+CONCERNS = ['Aging', 'Hyperpigmentation', 'Dryness', 'Sensitive Skin']  
 SEVERITIES = ['mild', 'moderate', 'severe']
-EXPECTED_CLASSES = [f"{concern}_{severity}" for concern in CONCERNS for severity in SEVERITIES]
+EXPECTED_CLASSES = [f"{concern}_{severity}" for concern in CONCERNS for severity in SEVERITIES]  # 12 classes
 
 # HAM10000 lesion types to skincare concerns (approximate mapping)
 LESION_TO_CONCERN = {
@@ -49,25 +50,29 @@ def preprocess_dataset():
     # Split into train and validation
     train_df, val_df = train_test_split(metadata, test_size=0.2, stratify=metadata['class'], random_state=42)
 
-    # Copy images to new structure
+    # Copy images from both parts
     for df, split in [(train_df, 'train'), (val_df, 'val')]:
         for _, row in df.iterrows():
             image_id = row['image_id']
             class_name = row['class']
-            src_path = os.path.join(DATASET_PATH, f"{image_id}.jpg")
+            src_path_1 = os.path.join(DATASET_PATH_PART_1, f"{image_id}.jpg")
+            src_path_2 = os.path.join(DATASET_PATH_PART_2, f"{image_id}.jpg")
             dst_path = os.path.join(OUTPUT_DIR, split, class_name, f"{image_id}.jpg")
-            if os.path.exists(src_path):
-                shutil.copy(src_path, dst_path)
+            
+            if os.path.exists(src_path_1):
+                shutil.copy(src_path_1, dst_path)
+            elif os.path.exists(src_path_2):
+                shutil.copy(src_path_2, dst_path)
             else:
-                print(f"Missing image: {src_path}")
+                print(f"Missing image: {image_id} not found in part 1 or part 2")
 
     # Verify directory structure
     train_dirs = os.listdir(os.path.join(OUTPUT_DIR, 'train'))
     print(f"Training directories created: {sorted(train_dirs)}")
-    assert len(train_dirs) == 15, f"Expected 15 directories, but found {len(train_dirs)}: {train_dirs}"
+    assert len(train_dirs) == 12, f"Expected 12 directories, but found {len(train_dirs)}: {train_dirs}"  
 
 if __name__ == "__main__":
-    # Clean up previous processed data
+    
     if os.path.exists(OUTPUT_DIR):
         shutil.rmtree(OUTPUT_DIR)
     preprocess_dataset()
